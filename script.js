@@ -184,4 +184,91 @@ document.addEventListener('DOMContentLoaded', () => {
   // ------------------------------------------------
 
   function updateDisplay() {
-    document.getElementById('score').t
+    level = Math.floor(correctAnswers / 5) + 1;
+    document.getElementById('score').textContent = correctAnswers;
+    document.getElementById('level').textContent = level;
+  }
+
+  function generateFood() {
+    food = {
+      x: Math.floor(Math.random() * gridWidth),
+      y: Math.floor(Math.random() * gridHeight)
+    };
+  }
+
+  function generateAnswerFoods() {
+    answerFood.yes = {
+      x: Math.floor(Math.random() * gridWidth),
+      y: Math.floor(Math.random() * gridHeight)
+    };
+    do {
+      answerFood.no = {
+        x: Math.floor(Math.random() * gridWidth),
+        y: Math.floor(Math.random() * gridHeight)
+      };
+    } while (answerFood.no.x === answerFood.yes.x && answerFood.no.y === answerFood.yes.y);
+  }
+
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
+  function drawCell(x, y, color) {
+    ctx.fillStyle = color;
+    ctx.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    snake.forEach((s, i) => drawCell(s.x, s.y, i === 0 ? '#1abc9c' : '#2ecc71'));
+    drawCell(food.x, food.y, '#f1c40f');
+    if (questionActive) {
+      drawCell(answerFood.yes.x, answerFood.yes.y, '#2ecc71');
+      drawCell(answerFood.no.x, answerFood.no.y, '#e74c3c');
+    }
+  }
+
+  function formatTime(sec) {
+    const m = String(Math.floor(sec / 60)).padStart(2, '0');
+    const s = String(sec % 60).padStart(2, '0');
+    return `${m}:${s}`;
+  }
+
+  function setDirection(dir) {
+    if (
+      (dir === 'left' && direction !== 'right') ||
+      (dir === 'right' && direction !== 'left') ||
+      (dir === 'up' && direction !== 'down') ||
+      (dir === 'down' && direction !== 'up')
+    ) {
+      nextDirection = dir;
+      questionPaused = false;
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowUp')    setDirection('up');
+    if (e.key === 'ArrowDown')  setDirection('down');
+    if (e.key === 'ArrowLeft')  setDirection('left');
+    if (e.key === 'ArrowRight') setDirection('right');
+  });
+
+  playBtn.addEventListener('click', () => {
+    difficulty = document.getElementById('difficulty-select').value;
+    document.getElementById('intro-screen').style.display = 'none';
+    startGame();
+  });
+
+  startBtn.addEventListener('click', startGame);
+  pauseBtn.addEventListener('click', pauseGame);
+  restartBtn.addEventListener('click', restartGame);
+
+  document.getElementById('up-btn').addEventListener('click', () => setDirection('up'));
+  document.getElementById('down-btn').addEventListener('click', () => setDirection('down'));
+  document.getElementById('left-btn').addEventListener('click', () => setDirection('left'));
+  document.getElementById('right-btn').addEventListener('click', () => setDirection('right'));
+
+});
