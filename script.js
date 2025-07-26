@@ -1,312 +1,281 @@
 // script.js
 document.addEventListener('DOMContentLoaded', () => {
   // Références DOM
-  const playBtn     = document.getElementById('play-btn');
-  const restartBtn  = document.getElementById('restart-btn');
-  const canvas      = document.getElementById('game-board');
-  const ctx         = canvas.getContext('2d');
+  const playBtn           = document.getElementById('play-btn');
+  const restartBtn        = document.getElementById('restart-btn');
+  const canvas            = document.getElementById('game-board');
+  const ctx               = canvas.getContext('2d');
+  const scoreDisplay      = document.getElementById('correct-answers-display');
+  const timerDisplay      = document.getElementById('timer');
+  const questionDisplay   = document.getElementById('question');
+  const finalScoreDisplay = document.getElementById('final-score');
+  const gameOverDiv       = document.getElementById('game-over');
 
   // Constantes
-  const gridSize   = 20;
-  const gridWidth  = canvas.width  / gridSize;
-  const gridHeight = canvas.height / gridSize;
-  const TOTAL_QUESTIONS_IN_QUIZ = 20;
+  const GRID_SIZE       = 20;
+  const GRID_WIDTH      = canvas.width  / GRID_SIZE;
+  const GRID_HEIGHT     = canvas.height / GRID_SIZE;
+  const TOTAL_QUESTIONS = 30;
+  const GAME_DURATION   = 180;   // 3 minutes
+  const GAME_SPEED      = 200;   // ms entre chaque frame
 
-  // Variables de jeu
-  let snake, direction, nextDirection;
-  let food, answerFood = { yes: {}, no: {} };
-  let gameInterval = null, timerInterval = null;
-  let gameSpeed;
-  let correctAnswers, totalQuestions;
-  let questionActive, questionPaused;
-  let currentQuestion, correctAnswer;
-  let timeLeft;   // en secondes
-  let gameStarted = false;
+  // État du jeu
+  let snake            = [];
+  let direction        = 'right';
+  let nextDirection    = 'right';
+  let food             = {};
+  let answerFood       = { yes: {}, no: {} };
+  let gameInterval     = null;
+  let timerInterval    = null;
+  let gameStarted      = false;
+  let pausedForStart   = false;
+  let questionActive   = false;
+  let growSegments     = 0;
+  let correctAnswers   = 0;
+  let totalQuestions   = 0;
+  let timeLeft         = GAME_DURATION;
+  let questions        = [];
+  let currentQuestion;
+  let correctAnswer;
 
-  // Questions pour le BTP
-  const questions = [
-    { question: "Un mur sert à séparer des pièces ou à soutenir un toit.", answer: "oui" },
-    { question: "Le sable est un ingrédient du béton.", answer: "oui" },
-    { question: "Un marteau sert à visser des vis.", answer: "non" },
-    { question: "La maçonnerie utilise des briques ou des blocs.", answer: "oui" },
-    { question: "Une grue sert à soulever des charges lourdes sur un chantier.", answer: "oui" },
-    { question: "Le ciment est un type de bois.", answer: "non" },
-    { question: "Un architecte dessine les plans des bâtiments.", answer: "oui" },
-    { question: "Le parpaing est un bloc de construction courant.", answer: "oui" },
-    { question: "Pour peindre un mur, on utilise de l'eau seulement.", answer: "non" },
-    { question: "Un casque de sécurité protège la tête sur un chantier.", answer: "oui" },
-    { question: "La plomberie s'occupe de l'électricité dans un bâtiment.", answer: "non" },
-    { question: "Un échafaudage est une structure temporaire pour travailler en hauteur.", answer: "oui" },
-    { question: "Le gros œuvre correspond aux fondations et murs porteurs d'un bâtiment.", answer: "oui" },
-    { question: "Un mètre ruban sert à mesurer des distances.", answer: "oui" },
-    { question: "Un électricien installe les prises et les fils électriques.", answer: "oui" },
-    { question: "Le carrelage se pose sur les murs et les sols.", answer: "oui" },
-    { question: "Un permis de construire est nécessaire pour bâtir une maison.", answer: "oui" },
-    { question: "Le toit protège le bâtiment de la pluie et du vent.", answer: "oui" },
-    { question: "Le bois est un matériau de construction renouvelable.", answer: "oui" },
-    { question: "La rénovation consiste à construire un bâtiment neuf.", answer: "non" }
+  // 30 questions alternant "oui"/verte et "non"/rouge
+  questions = [
+    { question: "Le béton armé renforce-t‑il les structures ?",      answer: "oui" },
+    { question: "Le plâtre est‑il un isolant thermique ?",           answer: "non" },
+    { question: "Le parpaing est‑il fabriqué en béton ?",           answer: "oui" },
+    { question: "Le goudron sert‑il aux fondations ?",              answer: "non" },
+    { question: "La chape de mortier nivelle-t‑elle un sol ?",       answer: "oui" },
+    { question: "Le verre feuilleté est une seule plaque ?",         answer: "non" },
+    { question: "Le ciment Portland est‑il répandu en France ?",     answer: "oui" },
+    { question: "Le papier peint est‑il un revêtement extérieur ?",  answer: "non" },
+    { question: "Un échafaudage permet‑il de travailler en hauteur ?",answer: "oui" },
+    { question: "Le treillis soudé sert‑il aux enduits décoratifs ?",answer: "non" },
+    { question: "Le bois lamellé‑collé supporte‑t‑il de fortes portées ?", answer: "oui" },
+    { question: "La tuile mécanique est‑elle en métal ?",            answer: "non" },
+    { question: "La pierre ponce est‑elle un isolant minéral ?",     answer: "oui" },
+    { question: "Le PVC résiste‑t‑il aux solvants forts ?",         answer: "non" },
+    { question: "Le zinc est‑il utilisé pour les toitures ?",       answer: "oui" },
+    { question: "Le sable fin assure‑t‑il un bon drainage ?",        answer: "non" },
+    { question: "La résine époxy renforce-t‑elle les sols ?",        answer: "oui" },
+    { question: "Le bois non traité résiste‑t‑il à l’humidité ?",     answer: "non" },
+    { question: "Le béton fibré contient‑il des fibres synthétiques ?", answer: "oui" },
+    { question: "La brique creuse isole‑t‑elle mieux que la pleine ?", answer: "oui" },
+    { question: "Une dalle sur terre‑plein est coulée directement ?", answer: "oui" },
+    { question: "Le verre trempé est plus souple que le verre ordinaire ?", answer: "non" },
+    { question: "Le composite bois‑plastique s’utilise en bardage ?", answer: "oui" },
+    { question: "Le papier goudronné étanche‑t‑il un toit plat ?",    answer: "non" },
+    { question: "Le polystyrène expansé est un isolant thermique ?",  answer: "oui" },
+    { question: "Le PVC rigide sert‑il aux câbles électriques ?",     answer: "non" },
+    { question: "La terre cuite est un isolant naturel ?",            answer: "oui" },
+    { question: "Le béton cellulaire est plus lourd que le classique ?", answer: "non" },
+    { question: "Le profilé IPE a une section en I ?",                answer: "oui" }
   ];
 
-  // ------------------------------------------------
-  // Fonctions de gestion du jeu
-  // ------------------------------------------------
+  // Mélange Fisher–Yates
+  function shuffle(arr) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
 
+  // Initialise le jeu
   function initGame() {
-    snake = [{ x:10,y:10 },{ x:9,y:10 },{ x:8,y:10 }];
+    snake = [{ x:10,y:10},{ x:9,y:10},{ x:8,y:10 }];
     direction = nextDirection = 'right';
     correctAnswers = totalQuestions = 0;
-    questionActive = questionPaused = false;
-    updateDisplay();
-
-    gameSpeed = 200;
-
-    timeLeft = 180;
-    document.getElementById('timer').textContent = formatTime(timeLeft);
-    clearInterval(timerInterval);
-    timerInterval = setInterval(countdown, 1000);
+    timeLeft = GAME_DURATION;
+    questionActive = false;
+    growSegments = 0;
+    gameStarted = true;
+    pausedForStart = true;
 
     shuffle(questions);
+    placeFood();
 
-    generateFood();
-  }
+    updateScore();
+    updateTimer();
+    questionDisplay.textContent = "Appuyez sur une flèche pour démarrer.";
 
-  function startGame() {
-    // Si la partie n'a pas encore commencé, on l'initialise
-    if (!gameStarted) {
-      initGame();
-      gameStarted = true;
-    }
-    // On (re)lance la boucle de jeu
-    clearInterval(gameInterval);
-    questionPaused = false;
-    gameInterval = setInterval(gameLoop, gameSpeed);
-    // On masque les écrans d'intro et de fin
-    document.getElementById('game-over').style.display = 'none';
-    document.getElementById('intro-screen').style.display = 'none';
-  }
-
-  function restartGame() {
-    clearInterval(gameInterval);
     clearInterval(timerInterval);
-    gameStarted = false; // On réinitialise l'état de la partie
-    startGame();
-  }
-
-  function gameOver() {
-    clearInterval(gameInterval);
-    clearInterval(timerInterval);
-    document.getElementById('correct-answers').textContent = correctAnswers;
-    document.getElementById('game-over').style.display     = 'flex';
-  }
-
-  // ------------------------------------------------
-  // Boucle de jeu et logique du serpent
-  // ------------------------------------------------
-
-  function gameLoop() {
-    moveSnake();
-    checkCollision();
+    timerInterval = setInterval(tick, 1000);
     draw();
   }
 
-  function countdown() {
+  function placeFood() {
+    food = randomCell();
+  }
+
+  function placeAnswerFoods() {
+    answerFood.yes = randomCell();
+    do {
+      answerFood.no = randomCell();
+    } while (
+      answerFood.no.x === answerFood.yes.x &&
+      answerFood.no.y === answerFood.yes.y
+    );
+  }
+
+  function tick() {
     timeLeft--;
-    document.getElementById('timer').textContent = formatTime(timeLeft);
-    if (timeLeft <= 0) {
-      gameOver();
-    }
+    updateTimer();
+    if (timeLeft <= 0) endGame();
   }
 
-  function moveSnake() {
-    if (questionActive && questionPaused) return;
-
-    const head = { ...snake[0] };
-    direction = nextDirection;
-
-    if      (direction==='right') head.x = (head.x+1)%gridWidth;
-    else if (direction==='left')  head.x = (head.x-1+gridWidth)%gridWidth;
-    else if (direction==='up')    head.y = (head.y-1+gridHeight)%gridHeight;
-    else if (direction==='down')  head.y = (head.y+1)%gridHeight;
-
-    snake.unshift(head);
-
-    if (!questionActive && snake[0].x===food.x && snake[0].y===food.y) {
-      if (totalQuestions >= TOTAL_QUESTIONS_IN_QUIZ) {
-        gameOver();
-        return;
-      }
-      totalQuestions++;
-      questionActive = true;
-      questionPaused = true;
-      currentQuestion = questions[totalQuestions-1].question;
-      correctAnswer   = questions[totalQuestions-1].answer;
-      document.getElementById('question').textContent = `${totalQuestions}/${TOTAL_QUESTIONS_IN_QUIZ} – ${currentQuestion}`;
-      generateAnswerFoods();
-      clearInterval(gameInterval);
-      gameInterval = null;
-    } else {
-      snake.pop();
-    }
+  function startAuto() {
+    if (!gameInterval) gameInterval = setInterval(loop, GAME_SPEED);
   }
-
-  function checkCollision() {
-    const head = snake[0];
-
-    for (let i=1; i<snake.length; i++) {
-      if (head.x===snake[i].x && head.y===snake[i].y) return gameOver();
-    }
-
-    if (questionActive && questionPaused) {
-      let choice = null;
-      if (head.x===answerFood.yes.x && head.y===answerFood.yes.y) choice = 'oui';
-      if (head.x===answerFood.no.x && head.y===answerFood.no.y) choice = 'non';
-
-      if (choice !== null) {
-        const wasCorrect = (choice === correctAnswer);
-        if (wasCorrect) {
-          correctAnswers++;
-          timeLeft += 10;
-          document.getElementById('timer').textContent = formatTime(timeLeft);
-        }
-        endQuestion(wasCorrect);
-      }
-    }
-  }
-
-  function endQuestion(wasCorrect) {
-    questionActive = false;
-    questionPaused = true;
-
-    updateDisplay();
-
-    const feedback = wasCorrect ? 'Bonne réponse !' : 'Mauvaise réponse.';
-    document.getElementById('question').textContent = `${feedback} (${correctAnswers}/${totalQuestions}) - Appuyez sur une flèche pour continuer.`;
-
-    if (totalQuestions >= TOTAL_QUESTIONS_IN_QUIZ) {
-      gameOver();
-      return;
-    }
-
-    generateFood();
+  function stopAuto() {
     clearInterval(gameInterval);
     gameInterval = null;
   }
-
-  // ------------------------------------------------
-  // Utilitaires
-  // ------------------------------------------------
-
-  function updateDisplay() {
-    document.getElementById('correct-answers-display').textContent = correctAnswers;
+  function loop() {
+    moveSnake();
+    checkSelfCollision();
+    if (questionActive) checkAnswerCollision();
+    draw();
   }
 
-  function generateFood() {
-    food = {
-      x: Math.floor(Math.random() * gridWidth),
-      y: Math.floor(Math.random() * gridHeight)
-    };
-    while (isOccupied(food)) {
-        food = {
-            x: Math.floor(Math.random() * gridWidth),
-            y: Math.floor(Math.random() * gridHeight)
-        };
+  function moveSnake() {
+    const head = { ...snake[0] };
+    direction = nextDirection;
+    if (direction==='right') head.x = (head.x+1)%GRID_WIDTH;
+    if (direction==='left')  head.x = (head.x-1+GRID_WIDTH)%GRID_WIDTH;
+    if (direction==='up')    head.y = (head.y-1+GRID_HEIGHT)%GRID_HEIGHT;
+    if (direction==='down')  head.y = (head.y+1)%GRID_HEIGHT;
+    snake.unshift(head);
+
+    if (!questionActive && head.x===food.x && head.y===food.y) {
+      totalQuestions++;
+      questionActive = true;
+      pausedForStart = true;
+      growSegments++;
+      currentQuestion = questions[totalQuestions-1].question;
+      correctAnswer   = questions[totalQuestions-1].answer;
+      questionDisplay.textContent = `${totalQuestions}/${TOTAL_QUESTIONS} – ${currentQuestion}`;
+      placeAnswerFoods();
+      stopAuto();
+      return;
     }
+
+    if (growSegments>0) growSegments--;
+    else snake.pop();
   }
 
-  function generateAnswerFoods() {
-    let pos1, pos2;
-    do {
-      pos1 = { x: Math.floor(Math.random() * gridWidth), y: Math.floor(Math.random() * gridHeight) };
-    } while (isOccupied(pos1));
+  function checkSelfCollision() {
+    const [h,...b] = snake;
+    for (const seg of b) if (seg.x===h.x && seg.y===h.y) return endGame();
+  }
 
-    do {
-      pos2 = { x: Math.floor(Math.random() * gridWidth), y: Math.floor(Math.random() * gridHeight) };
-    } while (isOccupied(pos2) || (pos1.x === pos2.x && pos1.y === pos2.y));
+  function checkAnswerCollision() {
+    const head = snake[0];
+    if (head.x===answerFood.yes.x && head.y===answerFood.yes.y)  handleAnswer(correctAnswer==='oui');
+    else if (head.x===answerFood.no.x && head.y===answerFood.no.y) handleAnswer(correctAnswer==='non');
+  }
 
-    if (Math.random() < 0.5) {
-      answerFood.yes = pos1;
-      answerFood.no = pos2;
-    } else {
-      answerFood.yes = pos2;
-      answerFood.no = pos1;
+  function handleAnswer(isCorrect) {
+    if (isCorrect) {
+      correctAnswers++;
+      growSegments++;
+      updateScore();
     }
-  }
-
-  function isOccupied(pos) {
-    return snake.some(segment => segment.x === pos.x && segment.y === pos.y);
+    questionActive = false;
+    pausedForStart = true;
+    stopAuto();
+    questionDisplay.textContent = isCorrect
+      ? `Bonne réponse ! (${correctAnswers}/${totalQuestions})`
+      : `Mauvaise réponse ! (${correctAnswers}/${totalQuestions})`;
+    placeFood();
   }
 
   function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    ctx.fillStyle = '#27ae60';
-    snake.forEach(segment => {
-      ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 1, gridSize - 1);
-    });
-
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#27ae60';
+    snake.forEach(seg=>ctx.fillRect(seg.x*GRID_SIZE,seg.y*GRID_SIZE,GRID_SIZE-1,GRID_SIZE-1));
     if (!questionActive) {
-        ctx.fillStyle = '#f1c40f';
-        ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
-    }
-
-    if (questionActive) {
-      ctx.fillStyle = 'green';
-      ctx.fillRect(answerFood.yes.x * gridSize, answerFood.yes.y * gridSize, gridSize, gridSize);
-      ctx.fillStyle = 'red';
-      ctx.fillRect(answerFood.no.x * gridSize, answerFood.no.y * gridSize, gridSize, gridSize);
+      ctx.fillStyle='#f1c40f';
+      ctx.fillRect(food.x*GRID_SIZE,food.y*GRID_SIZE,GRID_SIZE,GRID_SIZE);
+    } else {
+      ctx.fillStyle='green';
+      ctx.fillRect(answerFood.yes.x*GRID_SIZE,answerFood.yes.y*GRID_SIZE,GRID_SIZE,GRID_SIZE);
+      ctx.fillStyle='red';
+      ctx.fillRect(answerFood.no.x*GRID_SIZE,answerFood.no.y*GRID_SIZE,GRID_SIZE,GRID_SIZE);
     }
   }
 
-  function formatTime(seconds) {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+  function randomCell() {
+    let cell;
+    do {
+      cell = { x:Math.floor(Math.random()*GRID_WIDTH), y:Math.floor(Math.random()*GRID_HEIGHT) };
+    } while (snake.some(seg=>seg.x===cell.x&&seg.y===cell.y));
+    return cell;
   }
 
-  function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
+  function updateScore() { scoreDisplay.textContent = correctAnswers; }
+  function updateTimer() {
+    const m=String(Math.floor(timeLeft/60)).padStart(2,'0'),
+          s=String(timeLeft%60).padStart(2,'0');
+    timerDisplay.textContent = `${m}:${s}`;
+  }
+
+  // Map palier correctAnswers→temps équivalent
+  function equivalentTime(eqScore) {
+    if (eqScore <= 4)       return 30;
+    if (eqScore <= 7)       return 60;
+    if (eqScore <= 10)      return 90;
+    if (eqScore <= 13)      return 120;
+    if (eqScore <= 16)      return 150;
+    return 180;
+  }
+
+  function endGame() {
+    stopAuto();
+    clearInterval(timerInterval);
+    finalScoreDisplay.textContent = `${correctAnswers} / ${TOTAL_QUESTIONS}`;
+
+    const eqSec = equivalentTime(correctAnswers);
+    const eqMin = String(Math.floor(eqSec/60)).padStart(2,'0');
+    const eqS   = String(eqSec%60).padStart(2,'0');
+
+    let eqEl = document.getElementById('equivalent-time');
+    if (!eqEl) {
+      eqEl = document.createElement('p');
+      eqEl.id = 'equivalent-time';
+      gameOverDiv.appendChild(eqEl);
     }
+    eqEl.textContent = `Temps équivalent : ${eqMin}:${eqS}`;
+
+    gameOverDiv.style.display = 'flex';
   }
 
-  // ------------------------------------------------
-  // Gestionnaires d'événements
-  // ------------------------------------------------
-
-  // Le clic sur le bouton "Jouer" appelle la fonction startGame.
-  playBtn.addEventListener('click', startGame);
-  restartBtn.addEventListener('click', restartGame);
-
+  // Clavier
   document.addEventListener('keydown', e => {
-    const keyMap = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
-    const oppositeMap = { up: 'down', down: 'up', left: 'right', right: 'left' };
-
-    if (keyMap[e.key] && direction !== oppositeMap[keyMap[e.key]]) {
-        nextDirection = keyMap[e.key];
-        // Relance le jeu s'il est en pause (après une question).
-        // La condition "gameStarted" empêche de démarrer le jeu avec une touche
-        // depuis l'écran d'introduction.
-        if (gameInterval === null && gameStarted) {
-            startGame();
-        }
+    if (!gameStarted) return;
+    const map = { ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right' };
+    const opp = { up:'down',down:'up',left:'right',right:'left' };
+    if (!map[e.key]) return;
+    const dir = map[e.key];
+    if (dir === opp[direction]) return;
+    nextDirection = dir;
+    if (pausedForStart) {
+      pausedForStart = false;
+      startAuto();
     }
   });
 
-  document.getElementById('up-btn').addEventListener('click', () => {
-    if (direction !== 'down') nextDirection = 'up';
-    if (gameInterval === null && gameStarted) startGame();
+  // Boutons Jouer / Rejouer
+  playBtn.addEventListener('click', () => {
+    if (!gameStarted) {
+      initGame();
+      document.getElementById('intro-screen').style.display = 'none';
+      gameOverDiv.style.display = 'none';
+    }
   });
-  document.getElementById('down-btn').addEventListener('click', () => {
-    if (direction !== 'up') nextDirection = 'down';
-    if (gameInterval === null && gameStarted) startGame();
-  });
-  document.getElementById('left-btn').addEventListener('click', () => {
-    if (direction !== 'right') nextDirection = 'left';
-    if (gameInterval === null && gameStarted) startGame();
-  });
-  document.getElementById('right-btn').addEventListener('click', () => {
-    if (direction !== 'left') nextDirection = 'right';
-    if (gameInterval === null && gameStarted) startGame();
+  restartBtn.addEventListener('click', () => {
+    clearInterval(timerInterval);
+    stopAuto();
+    gameStarted = false;
+    document.getElementById('intro-screen').style.display = 'flex';
+    gameOverDiv.style.display = 'none';
   });
 });
