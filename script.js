@@ -165,6 +165,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const wasCorrect = (choice === correctAnswer);
         if (wasCorrect) {
           correctAnswers++;
+          timeLeft += 10;
+          document.getElementById('timer').textContent = formatTime(timeLeft);
         }
         endQuestion(wasCorrect);
       }
