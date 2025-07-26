@@ -2,8 +2,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   // Références DOM
   const playBtn     = document.getElementById('play-btn');
-  const startBtn    = document.getElementById('start-btn');
-  const pauseBtn    = document.getElementById('pause-btn');
   const restartBtn  = document.getElementById('restart-btn');
   const canvas      = document.getElementById('game-board');
   const ctx         = canvas.getContext('2d');
@@ -12,40 +10,41 @@ document.addEventListener('DOMContentLoaded', () => {
   const gridSize   = 20;
   const gridWidth  = canvas.width  / gridSize;
   const gridHeight = canvas.height / gridSize;
+  const TOTAL_QUESTIONS_IN_QUIZ = 20;
 
   // Variables de jeu
   let snake, direction, nextDirection;
   let food, answerFood = { yes: {}, no: {} };
   let gameInterval = null, timerInterval = null;
   let gameSpeed;
-  let difficulty, score, level, correctAnswers, totalQuestions;
+  let correctAnswers, totalQuestions;
   let questionActive, questionPaused;
   let currentQuestion, correctAnswer;
   let timeLeft;   // en secondes
   let gameStarted = false;
 
-  // 20 questions pour la note sur 20
+  // Questions pour le BTP
   const questions = [
-    { question: "Le béton armé contient des barres d'acier pour augmenter sa résistance à la traction.", answer: "oui" },
-    { question: "Un pont à haubans utilise des câbles disposés en éventail pour supporter le tablier.", answer: "oui" },
-    { question: "Le coffrage est utilisé pour donner forme au béton pendant son durcissement.", answer: "oui" },
-    { question: "La pierre de taille est principalement utilisée dans la construction moderne de gratte-ciels.", answer: "non" },
-    { question: "Les fondations superficielles sont adaptées pour tous les types de sol et de bâtiments.", answer: "non" },
-    { question: "Le BIM (Building Information Modeling) est une technologie utilisée dans la construction.", answer: "oui" },
-    { question: "Le mortier est un mélange de ciment, sable, eau et chaux utilisé comme liant.", answer: "oui" },
-    { question: "Les ponts suspendus sont maintenus par des câbles ancrés directement dans le tablier.", answer: "non" },
-    { question: "Le plâtre est imperméable et souvent utilisé pour les constructions extérieures.", answer: "non" },
-    { question: "Les bâtiments à ossature bois peuvent atteindre plusieurs étages.", answer: "oui" },
-    { question: "Le terme 'gros œuvre' désigne les finitions décoratives d'un bâtiment.", answer: "non" },
-    { question: "Les agrégats sont des matériaux comme le sable ou le gravier utilisés dans le béton.", answer: "oui" },
-    { question: "Une poutre en I présente une meilleure résistance à la flexion qu'une poutre carrée de même masse.", answer: "oui" },
-    { question: "L'isolation thermique par l'extérieur (ITE) permet d'éliminer les ponts thermiques.", answer: "oui" },
-    { question: "Les charpentes métalliques sont plus lourdes que les charpentes en bois.", answer: "non" },
-    { question: "L'énergie hydraulique peut être utilisée sur les chantiers pour alimenter des outils.", answer: "oui" },
-    { question: "La charge d'exploitation est prise en compte dans le calcul des fondations.", answer: "oui" },
-    { question: "Le béton précontraint utilise des câbles de tension pour améliorer ses performances.", answer: "oui" },
-    { question: "La flexion maximale d'une poutre se produit au niveau des appuis.", answer: "non" },
-    { question: "La conductivité thermique du bois est supérieure à celle du béton.", answer: "non" }
+    { question: "Un mur sert à séparer des pièces ou à soutenir un toit.", answer: "oui" },
+    { question: "Le sable est un ingrédient du béton.", answer: "oui" },
+    { question: "Un marteau sert à visser des vis.", answer: "non" },
+    { question: "La maçonnerie utilise des briques ou des blocs.", answer: "oui" },
+    { question: "Une grue sert à soulever des charges lourdes sur un chantier.", answer: "oui" },
+    { question: "Le ciment est un type de bois.", answer: "non" },
+    { question: "Un architecte dessine les plans des bâtiments.", answer: "oui" },
+    { question: "Le parpaing est un bloc de construction courant.", answer: "oui" },
+    { question: "Pour peindre un mur, on utilise de l'eau seulement.", answer: "non" },
+    { question: "Un casque de sécurité protège la tête sur un chantier.", answer: "oui" },
+    { question: "La plomberie s'occupe de l'électricité dans un bâtiment.", answer: "non" },
+    { question: "Un échafaudage est une structure temporaire pour travailler en hauteur.", answer: "oui" },
+    { question: "Le gros œuvre correspond aux fondations et murs porteurs d'un bâtiment.", answer: "oui" },
+    { question: "Un mètre ruban sert à mesurer des distances.", answer: "oui" },
+    { question: "Un électricien installe les prises et les fils électriques.", answer: "oui" },
+    { question: "Le carrelage se pose sur les murs et les sols.", answer: "oui" },
+    { question: "Un permis de construire est nécessaire pour bâtir une maison.", answer: "oui" },
+    { question: "Le toit protège le bâtiment de la pluie et du vent.", answer: "oui" },
+    { question: "Le bois est un matériau de construction renouvelable.", answer: "oui" },
+    { question: "La rénovation consiste à construire un bâtiment neuf.", answer: "non" }
   ];
 
   // ------------------------------------------------
@@ -53,67 +52,55 @@ document.addEventListener('DOMContentLoaded', () => {
   // ------------------------------------------------
 
   function initGame() {
-    // serpent de départ
     snake = [{ x:10,y:10 },{ x:9,y:10 },{ x:8,y:10 }];
     direction = nextDirection = 'right';
-    score = level = correctAnswers = totalQuestions = 0;
+    correctAnswers = totalQuestions = 0;
     questionActive = questionPaused = false;
     updateDisplay();
 
-    // vitesse
-    if (difficulty === 'easy')   gameSpeed = 200;
-    else if (difficulty === 'hard') gameSpeed = 100;
-    else                            gameSpeed = 150;
+    gameSpeed = 200;
 
-    // minuterie 3 min
     timeLeft = 180;
     document.getElementById('timer').textContent = formatTime(timeLeft);
     clearInterval(timerInterval);
     timerInterval = setInterval(countdown, 1000);
 
-    // tirer 20 questions aléatoires et uniques
     shuffle(questions);
-    questions.splice(20); // on garde les 20 premières
 
     generateFood();
   }
 
   function startGame() {
+    // Si la partie n'a pas encore commencé, on l'initialise
     if (!gameStarted) {
       initGame();
       gameStarted = true;
     }
+    // On (re)lance la boucle de jeu
     clearInterval(gameInterval);
     questionPaused = false;
     gameInterval = setInterval(gameLoop, gameSpeed);
+    // On masque les écrans d'intro et de fin
     document.getElementById('game-over').style.display = 'none';
-  }
-
-  function pauseGame() {
-    if (gameInterval && !questionActive) {
-      clearInterval(gameInterval);
-      gameInterval = null;
-    }
+    document.getElementById('intro-screen').style.display = 'none';
   }
 
   function restartGame() {
     clearInterval(gameInterval);
     clearInterval(timerInterval);
-    gameStarted = false;
+    gameStarted = false; // On réinitialise l'état de la partie
     startGame();
   }
 
   function gameOver() {
     clearInterval(gameInterval);
     clearInterval(timerInterval);
-    document.getElementById('final-score').textContent     = correctAnswers;
     document.getElementById('correct-answers').textContent = correctAnswers;
-    document.getElementById('total-questions').textContent = 20;
     document.getElementById('game-over').style.display     = 'flex';
   }
 
   // ------------------------------------------------
-  // Boucle, compteur et logique du serpent/questions
+  // Boucle de jeu et logique du serpent
   // ------------------------------------------------
 
   function gameLoop() {
@@ -125,7 +112,9 @@ document.addEventListener('DOMContentLoaded', () => {
   function countdown() {
     timeLeft--;
     document.getElementById('timer').textContent = formatTime(timeLeft);
-    if (timeLeft <= 0) gameOver();
+    if (timeLeft <= 0) {
+      gameOver();
+    }
   }
 
   function moveSnake() {
@@ -133,6 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const head = { ...snake[0] };
     direction = nextDirection;
+
     if      (direction==='right') head.x = (head.x+1)%gridWidth;
     else if (direction==='left')  head.x = (head.x-1+gridWidth)%gridWidth;
     else if (direction==='up')    head.y = (head.y-1+gridHeight)%gridHeight;
@@ -140,53 +130,67 @@ document.addEventListener('DOMContentLoaded', () => {
 
     snake.unshift(head);
 
-    // question
     if (!questionActive && snake[0].x===food.x && snake[0].y===food.y) {
+      if (totalQuestions >= TOTAL_QUESTIONS_IN_QUIZ) {
+        gameOver();
+        return;
+      }
       totalQuestions++;
-      questionActive = questionPaused = true;
+      questionActive = true;
+      questionPaused = true;
       currentQuestion = questions[totalQuestions-1].question;
       correctAnswer   = questions[totalQuestions-1].answer;
-      document.getElementById('question').textContent = `${totalQuestions}/20 – ${currentQuestion}`;
+      document.getElementById('question').textContent = `${totalQuestions}/${TOTAL_QUESTIONS_IN_QUIZ} – ${currentQuestion}`;
       generateAnswerFoods();
+      clearInterval(gameInterval);
+      gameInterval = null;
     } else {
       snake.pop();
     }
-    updateDisplay();
   }
 
   function checkCollision() {
     const head = snake[0];
-    // auto‐collision
+
     for (let i=1; i<snake.length; i++) {
       if (head.x===snake[i].x && head.y===snake[i].y) return gameOver();
     }
-    // réponses
-    if (questionActive && !questionPaused) {
-      if (head.x===answerFood.yes.x && head.y===answerFood.yes.y) {
-        if (correctAnswer==='oui') correctAnswers++;
-        endQuestion();
-      }
-      if (head.x===answerFood.no.x && head.y===answerFood.no.y) {
-        // 0 point en cas de 'non' alors qu'on attend 'oui'
-        endQuestion();
+
+    if (questionActive && questionPaused) {
+      let choice = null;
+      if (head.x===answerFood.yes.x && head.y===answerFood.yes.y) choice = 'oui';
+      if (head.x===answerFood.no.x && head.y===answerFood.no.y) choice = 'non';
+
+      if (choice !== null) {
+        const wasCorrect = (choice === correctAnswer);
+        if (wasCorrect) {
+          correctAnswers++;
+        }
+        endQuestion(wasCorrect);
       }
     }
   }
 
-  function endQuestion() {
+  function endQuestion(wasCorrect) {
     questionActive = false;
-    document.getElementById('question').textContent = `Bonne réponse ! (${correctAnswers}/${totalQuestions})`;
+    questionPaused = true;
+
+    updateDisplay();
+
+    const feedback = wasCorrect ? 'Bonne réponse !' : 'Mauvaise réponse.';
+    document.getElementById('question').textContent = `${feedback} (${correctAnswers}/${totalQuestions}) - Appuyez sur une flèche pour continuer.`;
+
     generateFood();
+    clearInterval(gameInterval);
+    gameInterval = null;
   }
 
   // ------------------------------------------------
-  // Utilitaires (affichage, génération, dessin…)
+  // Utilitaires
   // ------------------------------------------------
 
   function updateDisplay() {
-    level = Math.floor(correctAnswers / 5) + 1;
-    document.getElementById('score').textContent = correctAnswers;
-    document.getElementById('level').textContent = level;
+    document.getElementById('correct-answers-display').textContent = correctAnswers;
   }
 
   function generateFood() {
@@ -194,81 +198,108 @@ document.addEventListener('DOMContentLoaded', () => {
       x: Math.floor(Math.random() * gridWidth),
       y: Math.floor(Math.random() * gridHeight)
     };
-  }
-
-  function generateAnswerFoods() {
-    answerFood.yes = {
-      x: Math.floor(Math.random() * gridWidth),
-      y: Math.floor(Math.random() * gridHeight)
-    };
-    do {
-      answerFood.no = {
-        x: Math.floor(Math.random() * gridWidth),
-        y: Math.floor(Math.random() * gridHeight)
-      };
-    } while (answerFood.no.x === answerFood.yes.x && answerFood.no.y === answerFood.yes.y);
-  }
-
-  function shuffle(arr) {
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+    while (isOccupied(food)) {
+        food = {
+            x: Math.floor(Math.random() * gridWidth),
+            y: Math.floor(Math.random() * gridHeight)
+        };
     }
   }
 
-  function drawCell(x, y, color) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x * gridSize, y * gridSize, gridSize, gridSize);
+  function generateAnswerFoods() {
+    let pos1, pos2;
+    do {
+      pos1 = { x: Math.floor(Math.random() * gridWidth), y: Math.floor(Math.random() * gridHeight) };
+    } while (isOccupied(pos1));
+
+    do {
+      pos2 = { x: Math.floor(Math.random() * gridWidth), y: Math.floor(Math.random() * gridHeight) };
+    } while (isOccupied(pos2) || (pos1.x === pos2.x && pos1.y === pos2.y));
+
+    if (Math.random() < 0.5) {
+      answerFood.yes = pos1;
+      answerFood.no = pos2;
+    } else {
+      answerFood.yes = pos2;
+      answerFood.no = pos1;
+    }
+  }
+
+  function isOccupied(pos) {
+    return snake.some(segment => segment.x === pos.x && segment.y === pos.y);
   }
 
   function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    snake.forEach((s, i) => drawCell(s.x, s.y, i === 0 ? '#1abc9c' : '#2ecc71'));
-    drawCell(food.x, food.y, '#f1c40f');
+
+    ctx.fillStyle = '#27ae60';
+    snake.forEach(segment => {
+      ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 1, gridSize - 1);
+    });
+
+    if (!questionActive) {
+        ctx.fillStyle = '#f1c40f';
+        ctx.fillRect(food.x * gridSize, food.y * gridSize, gridSize, gridSize);
+    }
+
     if (questionActive) {
-      drawCell(answerFood.yes.x, answerFood.yes.y, '#2ecc71');
-      drawCell(answerFood.no.x, answerFood.no.y, '#e74c3c');
+      ctx.fillStyle = 'green';
+      ctx.fillRect(answerFood.yes.x * gridSize, answerFood.yes.y * gridSize, gridSize, gridSize);
+      ctx.fillStyle = 'red';
+      ctx.fillRect(answerFood.no.x * gridSize, answerFood.no.y * gridSize, gridSize, gridSize);
     }
   }
 
-  function formatTime(sec) {
-    const m = String(Math.floor(sec / 60)).padStart(2, '0');
-    const s = String(sec % 60).padStart(2, '0');
-    return `${m}:${s}`;
+  function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   }
 
-  function setDirection(dir) {
-    if (
-      (dir === 'left' && direction !== 'right') ||
-      (dir === 'right' && direction !== 'left') ||
-      (dir === 'up' && direction !== 'down') ||
-      (dir === 'down' && direction !== 'up')
-    ) {
-      nextDirection = dir;
-      questionPaused = false;
+  function shuffle(array) {
+    for (let i = array.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [array[i], array[j]] = [array[j], array[i]];
     }
   }
 
-  document.addEventListener('keydown', e => {
-    if (e.key === 'ArrowUp')    setDirection('up');
-    if (e.key === 'ArrowDown')  setDirection('down');
-    if (e.key === 'ArrowLeft')  setDirection('left');
-    if (e.key === 'ArrowRight') setDirection('right');
-  });
+  // ------------------------------------------------
+  // Gestionnaires d'événements
+  // ------------------------------------------------
 
-  playBtn.addEventListener('click', () => {
-    difficulty = document.getElementById('difficulty-select').value;
-    document.getElementById('intro-screen').style.display = 'none';
-    startGame();
-  });
-
-  startBtn.addEventListener('click', startGame);
-  pauseBtn.addEventListener('click', pauseGame);
+  // Le clic sur le bouton "Jouer" appelle la fonction startGame.
+  playBtn.addEventListener('click', startGame);
   restartBtn.addEventListener('click', restartGame);
 
-  document.getElementById('up-btn').addEventListener('click', () => setDirection('up'));
-  document.getElementById('down-btn').addEventListener('click', () => setDirection('down'));
-  document.getElementById('left-btn').addEventListener('click', () => setDirection('left'));
-  document.getElementById('right-btn').addEventListener('click', () => setDirection('right'));
+  document.addEventListener('keydown', e => {
+    const keyMap = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right' };
+    const oppositeMap = { up: 'down', down: 'up', left: 'right', right: 'left' };
 
+    if (keyMap[e.key] && direction !== oppositeMap[keyMap[e.key]]) {
+        nextDirection = keyMap[e.key];
+        // Relance le jeu s'il est en pause (après une question).
+        // La condition "gameStarted" empêche de démarrer le jeu avec une touche
+        // depuis l'écran d'introduction.
+        if (gameInterval === null && gameStarted) {
+            startGame();
+        }
+    }
+  });
+
+  document.getElementById('up-btn').addEventListener('click', () => {
+    if (direction !== 'down') nextDirection = 'up';
+    if (gameInterval === null && gameStarted) startGame();
+  });
+  document.getElementById('down-btn').addEventListener('click', () => {
+    if (direction !== 'up') nextDirection = 'down';
+    if (gameInterval === null && gameStarted) startGame();
+  });
+  document.getElementById('left-btn').addEventListener('click', () => {
+    if (direction !== 'right') nextDirection = 'left';
+    if (gameInterval === null && gameStarted) startGame();
+  });
+  document.getElementById('right-btn').addEventListener('click', () => {
+    if (direction !== 'left') nextDirection = 'right';
+    if (gameInterval === null && gameStarted) startGame();
+  });
 });

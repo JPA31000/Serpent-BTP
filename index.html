@@ -1,4 +1,3 @@
-<!-- index.html -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -8,7 +7,6 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <!-- Écran d'introduction -->
   <div id="intro-screen">
     <img src="intro.jpg" alt="Introduction" id="intro-image" />
     <div class="intro-content">
@@ -19,25 +17,17 @@
         <p>🍎 Lorsqu'il la mange, il s'arrête et une question s'affiche.</p>
         <p>🔴🍏 Deux nourritures réponses apparaissent : verte pour "OUI" et rouge pour "NON".</p>
         <p>🏁 C'est au joueur de guider le serpent vers la réponse souhaitée. Le serpent repart dès qu'une flèche est pressée.</p>
+        <p>🔄 Après avoir répondu, le serpent s'arrête de nouveau. Une nouvelle pomme jaune apparaît. Appuyez sur une flèche pour repartir vers la jaune.</p>
         <p>⏱ La partie dure 3 minutes.</p>
-      </div>
-      <div class="difficulty">
-        <label for="difficulty-select">Niveau de difficulté :</label>
-        <select id="difficulty-select">
-          <option value="easy">Facile</option>
-          <option value="medium" selected>Moyen</option>
-          <option value="hard">Difficile</option>
-        </select>
       </div>
       <button id="play-btn">Jouer</button>
     </div>
   </div>
 
-  <!-- Panneau d'informations -->
   <h1>Snake Quiz - Construction BTP</h1>
   <div class="info-panel">
     <div class="score-panel">
-      Score : <span id="score">0</span> | Niveau : <span id="level">1</span>
+      Bonnes réponses : <span id="correct-answers-display">0</span> / 20
     </div>
     <div class="timer-panel">
       Temps restant : <span id="timer">03:00</span>
@@ -47,22 +37,15 @@
     </div>
   </div>
 
-  <!-- Zone de jeu -->
   <div class="game-container">
     <canvas id="game-board" width="500" height="500"></canvas>
     <div class="game-over" id="game-over">
       <h2>Game Over !</h2>
-      <p>Votre score : <span id="final-score">0</span></p>
-      <p>Bonnes réponses : <span id="correct-answers">0</span>/<span id="total-questions">0</span></p>
+      <p>Bonnes réponses : <span id="correct-answers">0</span> / 20</p>
       <button id="restart-btn">Rejouer</button>
     </div>
   </div>
 
-  <!-- Contrôles -->
-  <div class="controls">
-    <button id="start-btn">Start</button>
-    <button id="pause-btn">Pause</button>
-  </div>
   <div class="mobile-controls">
     <button id="up-btn">↑</button>
     <button id="left-btn">←</button>
@@ -70,6 +53,6 @@
     <button id="down-btn">↓</button>
   </div>
 
-  <script src="script.js" defer></script>
+  <script src="script.js"></script>
 </body>
 </html>
