@@ -182,6 +182,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const feedback = wasCorrect ? 'Bonne réponse !' : 'Mauvaise réponse.';
     document.getElementById('question').textContent = `${feedback} (${correctAnswers}/${totalQuestions}) - Appuyez sur une flèche pour continuer.`;
 
+    if (totalQuestions >= TOTAL_QUESTIONS_IN_QUIZ) {
+      gameOver();
+      return;
+    }
+
     generateFood();
     clearInterval(gameInterval);
     gameInterval = null;
