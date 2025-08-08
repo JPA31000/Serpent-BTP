@@ -82,13 +82,28 @@ canvas {
 
 /* Contrôles */
 .mobile-controls {
-  text-align: center; margin-top: 10px;
+  margin: 10px auto;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 150px;
+}
+.middle-row {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
 }
 .mobile-controls button {
-  padding: 10px 20px; font-size: 16px;
-  margin: 5px; border: none; border-radius: 5px;
-  cursor: pointer; background-color: #3498db;
-  color: white; transition: background-color 0.3s ease;
+  padding: 10px 20px;
+  font-size: 16px;
+  margin: 5px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  background-color: #3498db;
+  color: white;
+  transition: background-color 0.3s ease;
 }
 .mobile-controls button:hover {
   background-color: #2980b9;
