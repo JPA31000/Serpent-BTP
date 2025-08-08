@@ -10,6 +10,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const questionDisplay   = document.getElementById('question');
   const finalScoreDisplay = document.getElementById('final-score');
   const gameOverDiv       = document.getElementById('game-over');
+  const upBtn             = document.getElementById('up-btn');
+  const downBtn           = document.getElementById('down-btn');
+  const leftBtn           = document.getElementById('left-btn');
+  const rightBtn          = document.getElementById('right-btn');
 
   // Constantes
   const GRID_SIZE       = 20;
@@ -37,6 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let questions        = [];
   let currentQuestion;
   let correctAnswer;
+  const opposite = { up:'down', down:'up', left:'right', right:'left' };
 
   // 30 questions alternant "oui"/verte et "non"/rouge
   questions = [
@@ -248,19 +253,35 @@ document.addEventListener('DOMContentLoaded', () => {
     gameOverDiv.style.display = 'flex';
   }
 
-  // Clavier
-  document.addEventListener('keydown', e => {
+  function handleDirection(dir) {
     if (!gameStarted) return;
-    const map = { ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right' };
-    const opp = { up:'down',down:'up',left:'right',right:'left' };
-    if (!map[e.key]) return;
-    const dir = map[e.key];
-    if (dir === opp[direction]) return;
+    if (dir === opposite[direction]) return;
     nextDirection = dir;
     if (pausedForStart) {
       pausedForStart = false;
       startAuto();
     }
+  }
+
+  // Clavier
+  document.addEventListener('keydown', e => {
+    const map = { ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right' };
+    const dir = map[e.key];
+    if (dir) handleDirection(dir);
+  });
+
+  // Contrôles tactiles / boutons
+  [
+    [upBtn, 'up'],
+    [downBtn, 'down'],
+    [leftBtn, 'left'],
+    [rightBtn, 'right']
+  ].forEach(([btn, dir]) => {
+    btn.addEventListener('click', () => handleDirection(dir));
+    btn.addEventListener('touchstart', e => {
+      e.preventDefault();
+      handleDirection(dir);
+    });
   });
 
   // Boutons Jouer / Rejouer
